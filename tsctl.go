@@ -114,7 +114,7 @@ func UnpackReply(buf io.Reader, reply interface{}) error {
 		case tag_word:
 			err = binary.Read(buf, binary.LittleEndian, &sval)
 			t.Value = int32(sval)
-		case tag_int:
+		case tag_int, 0xc4, 0xc0, 0x03:
 			err = binary.Read(buf, binary.LittleEndian, &ival)
 			t.Value = int32(ival)
 		default:
