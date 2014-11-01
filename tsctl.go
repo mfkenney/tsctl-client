@@ -93,13 +93,36 @@ func PackMsg(hdr TsReq, params ...interface{}) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+func read_multi(buf io.Reader, vals ...interface{}) error {
+	var err error
+	for _, v := range vals {
+		err = binary.Read(buf, binary.LittleEndian, v)
+		if err != nil {
+			break
+		}
+	}
+	return err
+}
+
+func read_string(buf io.Reader) ([]byte, error) {
+	var (
+		strval []byte
+		n      uint32
+	)
+	err := binary.Read(buf, binary.LittleEndian, &n)
+	if err == nil {
+		strval = make([]byte, n)
+		err = binary.Read(buf, binary.LittleEndian, strval)
+	}
+	return strval, err
+}
+
 // Convert a reply from its wire format
 func UnpackReply(buf io.Reader, reply interface{}) error {
 	var err error
 	var ival uint32
 	var sval uint16
 	var bval uint8
-	var strval []byte
 
 	hdr := TsReply{}
 	switch t := reply.(type) {
@@ -120,21 +143,23 @@ func UnpackReply(buf io.Reader, reply interface{}) error {
 		default:
 			return fmt.Errorf("invalid packet header: %v", hdr)
 		}
-		err = binary.Read(buf, binary.LittleEndian, &bval)
-		t.Endtag = bval
+
+		if err == nil {
+			err = binary.Read(buf, binary.LittleEndian, &bval)
+			t.Endtag = bval
+		}
 	case *StringReply:
 		err = binary.Read(buf, binary.LittleEndian, &hdr)
 		if hdr.Tag != tag_strlen {
 			return fmt.Errorf("invalid packet header: %v", hdr)
 		}
-		err = binary.Read(buf, binary.LittleEndian, &ival)
-		strval = make([]byte, ival)
-		err = binary.Read(buf, binary.LittleEndian, strval)
-		err = binary.Read(buf, binary.LittleEndian, &bval)
 		t.TsReply = hdr
-		t.Strlen = ival
-		t.Value = strval
-		t.Endtag = bval
+		t.Value, err = read_string(buf)
+		if err == nil {
+			t.Strlen = uint32(len(t.Value))
+			err = binary.Read(buf, binary.LittleEndian, &bval)
+			t.Endtag = bval
+		}
 	default:
 		return fmt.Errorf("invalid reply type: %v", t)
 	}
