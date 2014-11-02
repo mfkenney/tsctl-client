@@ -1,5 +1,6 @@
-// Package implements a subset of the tsctl TCP protocol
-// developed by Technologic Systems.
+// Package implements a subset of the client side of the tsctl TCP
+// protocol developed by Technologic Systems. At the moment, only
+// some of the System, Bus, and DIO class commands are supported.
 //
 // See http://wiki.embeddedarm.com/wiki/Tsctl#tsctl_TCP_protocol
 package tsctl
@@ -27,20 +28,23 @@ const (
 	Edio
 )
 
-// The most basic message type. All fields must be exported
-// so the structure can be deserialized with UnpackMsg
+// Basic request message type.
 type TsReq struct {
 	Class    TsClass
 	Instance uint8
 	Command  uint8
 }
 
+// Basic command reply
 type TsReply struct {
 	Class    TsClass
 	Instance uint8
 	Tag      uint8
 }
 
+// Meaning of some of the "tags" in the Reply packets. These
+// are not officially documented, rather, their meanings were
+// inferred by their usage within the various packet types.
 const (
 	tag_strlen    = 0x50
 	tag_int       = 0x13
@@ -50,6 +54,7 @@ const (
 	tag_word      = 0x01
 )
 
+// Constants use by the Bus/DIO Loc/Unlock commands.
 type LockType uint32
 
 const (
@@ -58,23 +63,19 @@ const (
 	NoUnlock    LockType = 4
 )
 
+// Reply packet containing a single integer
 type ScalarReply struct {
 	TsReply
 	Value  int32
 	Endtag uint8
 }
 
+// Reply packet containing a single length-prefixed string
 type StringReply struct {
 	TsReply
 	Strlen uint32
 	Value  []byte
 	Endtag uint8
-}
-
-func assert_true(test bool, msg string) {
-	if test != true {
-		panic(msg)
-	}
 }
 
 // Convert a message to its wire format

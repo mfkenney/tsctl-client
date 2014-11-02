@@ -44,14 +44,17 @@ const (
 	BitsGet32
 )
 
+// Command to lock the Bus
 func BusLockMsg(l LockType) ([]byte, error) {
 	return PackMsg(TsReq{Bus, 0, uint8(Lock)}, uint32(0), l)
 }
 
+// Command to unlock the Bus
 func BusUnlockMsg(l LockType) ([]byte, error) {
 	return PackMsg(TsReq{Bus, 0, uint8(Unlock)}, uint32(0), l)
 }
 
+// Command to read a memory address
 func PeekMsg(address uint32, size int) ([]byte, error) {
 	var cmd BusCommand
 
@@ -69,6 +72,7 @@ func PeekMsg(address uint32, size int) ([]byte, error) {
 	return PackMsg(TsReq{Bus, 0, uint8(cmd)}, address)
 }
 
+// Command to write to a memory address
 func PokeMsg(address uint32, size int, val uint32) ([]byte, error) {
 	switch size {
 	case 8:
@@ -82,6 +86,7 @@ func PokeMsg(address uint32, size int, val uint32) ([]byte, error) {
 	return nil, fmt.Errorf("Invalid size: %v", size)
 }
 
+// Command to set a bit at a memory address
 func BitSetMsg(address uint32, size int, bitnum uint32) ([]byte, error) {
 	var cmd BusCommand
 
@@ -108,6 +113,7 @@ func BitSetMsg(address uint32, size int, bitnum uint32) ([]byte, error) {
 	return PackMsg(TsReq{Bus, 0, uint8(cmd)}, address, bitnum)
 }
 
+// Command to clear a bit at a memory address
 func BitClearMsg(address uint32, size int, bitnum uint32) ([]byte, error) {
 	var cmd BusCommand
 
@@ -134,6 +140,7 @@ func BitClearMsg(address uint32, size int, bitnum uint32) ([]byte, error) {
 	return PackMsg(TsReq{Bus, 0, uint8(cmd)}, address, bitnum)
 }
 
+// Command to toggle a bit at a memory address
 func BitToggleMsg(address uint32, size int, bitnum uint32) ([]byte, error) {
 	var cmd BusCommand
 
