@@ -66,16 +66,13 @@ const (
 // Reply packet containing a single integer
 type ScalarReply struct {
 	TsReply
-	Value  int32
-	Endtag uint8
+	Value int32
 }
 
 // Reply packet containing a single length-prefixed string
 type StringReply struct {
 	TsReply
-	Strlen uint32
-	Value  []byte
-	Endtag uint8
+	Value string
 }
 
 // Convert a message to its wire format
@@ -105,7 +102,7 @@ func read_multi(buf io.Reader, vals ...interface{}) error {
 	return err
 }
 
-func read_string(buf io.Reader) ([]byte, error) {
+func read_string(buf io.Reader) (string, error) {
 	var (
 		strval []byte
 		n      uint32
@@ -115,7 +112,7 @@ func read_string(buf io.Reader) ([]byte, error) {
 		strval = make([]byte, n)
 		err = binary.Read(buf, binary.LittleEndian, strval)
 	}
-	return strval, err
+	return string(strval), err
 }
 
 // Convert a reply from its wire format
@@ -144,11 +141,6 @@ func UnpackReply(buf io.Reader, reply interface{}) error {
 		default:
 			return fmt.Errorf("invalid packet header: %v", hdr)
 		}
-
-		if err == nil {
-			err = binary.Read(buf, binary.LittleEndian, &bval)
-			t.Endtag = bval
-		}
 	case *StringReply:
 		err = binary.Read(buf, binary.LittleEndian, &hdr)
 		if hdr.Tag != tag_strlen {
@@ -156,13 +148,15 @@ func UnpackReply(buf io.Reader, reply interface{}) error {
 		}
 		t.TsReply = hdr
 		t.Value, err = read_string(buf)
-		if err == nil {
-			t.Strlen = uint32(len(t.Value))
-			err = binary.Read(buf, binary.LittleEndian, &bval)
-			t.Endtag = bval
-		}
 	default:
 		return fmt.Errorf("invalid reply type: %v", t)
+	}
+
+	if err == nil {
+		err = binary.Read(buf, binary.LittleEndian, &bval)
+		if bval != tag_end {
+			err = fmt.Errorf("invalid end tag: %02x", bval)
+		}
 	}
 	return err
 }

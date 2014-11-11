@@ -55,7 +55,7 @@ func TestUnpack(t *testing.T) {
 		t.Errorf("Cannot unpack buffer: %v", err)
 	}
 
-	if bytes.Compare(reply.Value, []byte("1.42")) != 0 {
+	if reply.Value != "1.42" {
 		t.Errorf("Packet decoding error: %v", reply)
 	}
 }
